@@ -1112,7 +1112,7 @@ void Adafruit_GFX::drawRGBBitmap(int16_t x, int16_t y, uint16_t *bitmap,
     @param    size  Font magnification level, 1 is 'original' size
 */
 /**************************************************************************/
-void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
+void Adafruit_GFX::drawChar(int16_t x, int16_t y, uint16_t c,
                             uint16_t color, uint16_t bg, uint8_t size) {
   drawChar(x, y, c, color, bg, size, size);
 }
@@ -1131,7 +1131,7 @@ void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
     @param    size_y  Font magnification level in Y-axis, 1 is 'original' size
 */
 /**************************************************************************/
-void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
+void Adafruit_GFX::drawChar(int16_t x, int16_t y, uint16_t c,
                             uint16_t color, uint16_t bg, uint8_t size_x,
                             uint8_t size_y) {
 
@@ -1178,7 +1178,7 @@ void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
     // newlines, returns, non-printable characters, etc.  Calling
     // drawChar() directly with 'bad' characters of font may cause mayhem!
 
-    c -= (uint8_t)pgm_read_byte(&gfxFont->first);
+    c -= (uint16_t)pgm_read_word(&gfxFont->first);
     GFXglyph *glyph = pgm_read_glyph_ptr(gfxFont, c);
     uint8_t *bitmap = pgm_read_bitmap_ptr(gfxFont);
 
@@ -1240,6 +1240,8 @@ void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
 */
 /**************************************************************************/
 size_t Adafruit_GFX::write(uint8_t c) {
+  static uint8_t temp[3] = {0, 0, 0};
+  static uint8_t temp_count = 0;
   if (!gfxFont) { // 'Classic' built-in font
 
     if (c == '\n') {              // Newline?
@@ -1261,9 +1263,12 @@ size_t Adafruit_GFX::write(uint8_t c) {
       cursor_x = 0;
       cursor_y +=
           (int16_t)textsize_y * (uint8_t)pgm_read_byte(&gfxFont->yAdvance);
+      temp_count = 0;
     } else if (c != '\r') {
-      uint8_t first = pgm_read_byte(&gfxFont->first);
-      if ((c >= first) && (c <= (uint8_t)pgm_read_byte(&gfxFont->last))) {
+      uint16_t chinese_size = (uint16_t)pgm_read_word(&gfxFont->Chinese_size);
+      uint16_t first = (uint16_t)pgm_read_word(&gfxFont->first);
+      uint16_t last = (uint16_t)pgm_read_word(&gfxFont->last);
+      if ((c >= first) && (c <= last - chinese_size)) {
         GFXglyph *glyph = pgm_read_glyph_ptr(gfxFont, c - first);
         uint8_t w = pgm_read_byte(&glyph->width),
                 h = pgm_read_byte(&glyph->height);
@@ -1279,6 +1284,41 @@ size_t Adafruit_GFX::write(uint8_t c) {
         }
         cursor_x +=
             (uint8_t)pgm_read_byte(&glyph->xAdvance) * (int16_t)textsize_x;
+        temp_count = 0;
+      } else {
+        temp[temp_count] = c;
+        temp_count++;
+
+        if (temp_count == 3) {
+          temp_count = 0;
+          uint16_t unicode = 0;
+          
+          unicode = ((uint8_t(int(temp[0]) << 4)) >> 4);
+          unicode = unicode << 6 | ((uint8_t(int(temp[1]) << 2)) >> 2);
+          unicode = unicode << 6 | ((uint8_t(int(temp[2]) << 2)) >> 2);
+
+          for (size_t i = 0; i < chinese_size; i++) {
+            if (unicode == (uint16_t)pgm_read_word(&gfxFont->Chinese_[i])) {
+              size_t index = (last - chinese_size + i + 1) - first;
+              GFXglyph *glyph = pgm_read_glyph_ptr(gfxFont, index);
+              uint8_t w = (uint8_t)pgm_read_byte(&glyph->width),
+                      h = (uint8_t)pgm_read_byte(&glyph->height);
+              if ((w > 0) && (h > 0)) { // Is there an associated bitmap?
+                  int16_t xo = (int8_t)pgm_read_byte(&glyph->xOffset); // sic
+                  if (wrap && ((cursor_x + textsize_x * (xo + w)) > _width)) {
+                      cursor_x = 0;
+                      cursor_y += (int16_t)textsize_y *
+                          (uint8_t)pgm_read_byte(&gfxFont->yAdvance);
+                  }
+                  drawChar(cursor_x, cursor_y, index + first, textcolor, textbgcolor, textsize_x,
+                     textsize_y);
+              }
+              cursor_x +=
+              (uint8_t)pgm_read_byte(&glyph->xAdvance) * (int16_t)textsize_x;
+              break;
+            }
+          }
+        }
       }
     }
   }

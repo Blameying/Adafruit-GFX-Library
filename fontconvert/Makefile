@@ -1,8 +1,10 @@
 all: fontconvert
 
 CC     = gcc
-CFLAGS = -Wall -I/usr/local/include/freetype2 -I/usr/include/freetype2 -I/usr/include
-LIBS   = -lfreetype
+# 这个是加入头文件，让在打包时能找到头文件，
+# 找到自己的freetype2库文件位置，按这个格式改掉下面的内容
+CFLAGS = -Wall -I/opt/homebrew/Cellar/freetype/2.13.3/include/freetype2 -I/opt/homebrew/Cellar/freetype/2.13.3/include 
+LIBS   = -lfreetype -L/opt/homebrew/Cellar/freetype/2.13.3/lib
 
 fontconvert: fontconvert.c
 	$(CC) $(CFLAGS) $< $(LIBS) -o $@

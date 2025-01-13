@@ -19,11 +19,13 @@ typedef struct {
 
 /// Data stored for FONT AS A WHOLE
 typedef struct {
-  uint8_t *bitmap;  ///< Glyph bitmaps, concatenated
-  GFXglyph *glyph;  ///< Glyph array
+  uint8_t *bitmap;  ///< 字形位图，串联
+  GFXglyph *glyph;  ///< 字形阵列
+  uint16_t *Chinese_;
+  size_t Chinese_size;
   uint16_t first;   ///< ASCII extents (first char)
   uint16_t last;    ///< ASCII extents (last char)
-  uint8_t yAdvance; ///< Newline distance (y axis)
+  uint8_t yAdvance; ///< 新线距离 (y 轴)
 } GFXfont;
 
 #endif // _GFXFONT_H_

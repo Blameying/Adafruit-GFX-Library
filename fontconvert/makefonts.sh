@@ -12,25 +12,25 @@
 # (huge zipfile, different license) but they're easily acquired:
 # http://savannah.gnu.org/projects/freefont/
 
-convert=./fontconvert
-inpath=~/Desktop/freefont/
-outpath=../Fonts/
-fonts=(FreeMono FreeSans FreeSerif)
-styles=("" Bold Italic BoldItalic Oblique BoldOblique)
-sizes=(9 12 18 24)
+convert=./fontconvert  #结构体
+inpath=~/Desktop/freefont/ #输入位置
+outpath=./Fonts/  #输出位置
+fonts=(songti)  #字体
+styles=("")   #字体样式
+sizes=(12)   #字体大小
 
-for f in ${fonts[*]}
+for f in ${fonts[*]} #遍历字体表
 do
-	for index in ${!styles[*]}
+	for index in ${!styles[*]} #字体样式
 	do
-		st=${styles[$index]}
+		st=${styles[$index]} #
 		for si in ${sizes[*]}
 		do
-			infile=$inpath$f$st".ttf"
+			infile="songti.ttf"
 			if [ -f $infile ] # Does source combination exist?
 			  then
 				outfile=$outpath$f$st$si"pt7b.h"
-#				printf "%s %s %s > %s\n" $convert $infile $si $outfile
+				printf "%s %s %s > %s\n" $convert $infile $si $outfile
 				$convert $infile $si > $outfile
 			fi
 		done
